@@ -1,16 +1,67 @@
-## Hi there 👋
+## Projeto de Redes de Colaborações
 
-<!--
-**Projeto-Redes-Colaboracoes/Projeto-Redes-Colaboracoes** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+**Aluno**: Beatriz Rogers Tripoli Barbosa  
+**Orientadora**: Profª Drª Sahudy Montenegro González  
+**Instituição**: Universidade Federal de São Carlos (UFSCar) - Graduação em Ciências da Computação
 
-Here are some ideas to get you started:
+### Objetivo
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+Criar um banco de dados estruturado a partir de currículos Lattes de servidores da UFSCar para análise de redes de colaboração voltada ao Observatório Mulheres da UFSCar.
+
+## Estrutura do Projeto
+
+### Fontes de Dados
+
+- **CSV de Servidores UFSCar**: Arquivo contendo informações dos servidores da universidade com seus IDs Lattes
+- **Currículos Lattes**: Arquivos HTML brutos obtidos através do extrator Lattes desenvolvido por Jesus P Mena-Chalco. Os arquivos utilizados são os brutos, não processados pelo extrator
+
+### Arquivos Executáveis
+
+#### `extract_servidores_csv.py`
+Extrai dados do CSV de servidores da UFSCar, gerando uma lista de servidores que possuem currículo Lattes registrado.
+
+**Entrada**: Arquivo CSV (codificado em UTF-8) com colunas `lattes` (ID Lattes) e `nome` (nome completo), separadas por ponto-e-vírgula
+
+**Saída**: Lista de dicionários com as chaves:
+- `idLattes`: identificador único do currículo Lattes  
+- `nomeCompleto`: nome do servidor
+
+**Uso**:
+```bash
+python extract_servidores_csv.py --input <csv-file> [--output out.list]
+```
+
+#### `parserBSLattes.py`
+Parser para extrair informações estruturadas dos currículos Lattes em formato HTML. Extrai metadados e dados estruturados como áreas de atuação e linhas de pesquisa, entre outros.
+
+#### `extract_to_json.py`  
+Utiliza o parser `parserBSLattes.py` para converter arquivos HTML de currículos Lattes em formato JSON estruturado.
+
+**Entrada**: Arquivo HTML Lattes (codificado em UTF-8), opcionalmente um CSV de servidores
+
+**Saída**: Arquivo JSON com:
+- Metadados do currículo
+- Listas estruturadas extraídas pelo parser
+- Campo `sexo` (se CSV for fornecido)
+
+**Uso**:
+```bash
+python extract_to_json.py --input <html-file> [--output out.json] [--csv <csv-file>]
+```
+
+#### `filling_idlattes.py`
+Preenche ou valida informações de IDs Lattes em estruturas de dados.
+
+### Scripts MongoDB
+
+Localizado em `Mongo Scripts/`:
+
+- **`normalize_mongo.py`**: Normaliza dados no MongoDB
+- **`update_documents.py`**: Atualiza documentos na base de dados
+
+## Fluxo de Processamento
+
+1. Extrair informações dos servidores do CSV (`extract_servidores_csv.py`)
+2. Obter arquivos brutos de currículos Lattes (do extrator de Jesus P Mena-Chalco)
+3. Converter HTML Lattes para JSON (`extract_to_json.py` com `parserBSLattes.py`)
+4. Processar e normalizar dados no MongoDB (scripts em `Mongo Scripts/`)
