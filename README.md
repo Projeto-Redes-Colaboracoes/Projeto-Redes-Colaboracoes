@@ -59,6 +59,14 @@ Localizado em `Mongo Scripts/`:
 - **`normalize_mongo.py`**: Normaliza dados no MongoDB
 - **`update_documents.py`**: Atualiza documentos na base de dados
 
+## Trabalhos Escritos
+
+Estudos e produções redigidas para fundamentação teórica do projeto, localizados em `Trabalhos Escritos/`:
+
+- **Apresentação sobre Pré-processamento em PLN.pdf**: Estudo sobre técnicas de pré-processamento em Processamento de Linguagem Natural
+- **Base para Entrevista com Andrea.pdf**: Material preparado para entrevista sobre aspectos do projeto
+- **Resumo do Artigo - A Review and Analysis of Recommendation Systems in Collaboration Networks.pdf**: Resumo de artigo relevante sobre sistemas de recomendação em redes de colaboração
+
 ## Fluxo de Processamento
 
 1. Extrair informações dos servidores do CSV (`extract_servidores_csv.py`)
