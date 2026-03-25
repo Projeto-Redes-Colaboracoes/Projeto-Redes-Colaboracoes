@@ -2507,8 +2507,8 @@ class ParserBSLattes:
                 for part in parts:
                     orientadores.append({
                         "nome": part,
-                        "papel": role,
                         "id_lattes": self._resolve_lattes_id_for_name(part, orientadores),
+                        "papel": role,
                     })
 
                 orientadores = self._fill_owner_id_in_people(orientadores)
