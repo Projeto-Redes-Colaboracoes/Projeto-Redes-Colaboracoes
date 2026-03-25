@@ -68,6 +68,7 @@ class ParserBSLattes:
         # Debug
         self.debug_parsing: bool = False
         self._debug_max_snippet: int = 500
+        self._logger = logger
 
         # Carrega o HTML inicial
         self._soup: Optional[BeautifulSoup] = None
@@ -99,6 +100,11 @@ class ParserBSLattes:
         self._debug_max_snippet = max(int(max_snippet or 500), 1)
 
         log = logging.getLogger(logger_name) if logger_name else logger
+        self._logger = log
+
+        if not self.debug_parsing:
+            return
+
         log.setLevel(level)
 
         # Evita considerar FileHandler como StreamHandler para manter saida no terminal.
@@ -173,7 +179,10 @@ class ParserBSLattes:
         - success: resultado da estrategia (True/False/None)
         - details: contexto adicional curto
         """
+        log = getattr(self, "_logger", logger)
         if not getattr(self, "debug_parsing", False):
+            return
+        if not log.isEnabledFor(logging.DEBUG):
             return
 
         status = "unknown"
@@ -186,7 +195,7 @@ class ParserBSLattes:
         fallback_text = "yes" if fallback else "no"
         detail_text = details.strip()
         if detail_text:
-            logger.debug(
+            log.debug(
                 "TRACE section=%s step=%s strategy=%s fallback=%s status=%s details=%s",
                 section,
                 step,
@@ -196,7 +205,7 @@ class ParserBSLattes:
                 detail_text,
             )
         else:
-            logger.debug(
+            log.debug(
                 "TRACE section=%s step=%s strategy=%s fallback=%s status=%s",
                 section,
                 step,
@@ -213,7 +222,7 @@ class ParserBSLattes:
         try:
             soup = BeautifulSoup(cvLattesHTML, "html.parser")
         except Exception:
-            logging.error("Erro ao abrir o arquivo HTML.", exc_info=True)
+            getattr(self, "_logger", logger).error("Erro ao abrir o arquivo HTML.", exc_info=True)
             soup = BeautifulSoup(str(cvLattesHTML), "html.parser")
 
         self._soup = soup
@@ -389,7 +398,7 @@ class ParserBSLattes:
                 self._trace("parse", "section_handler_done", strategy="handler_call", success=True, details=name_attr)
             except Exception:
                 if getattr(self, "debug_parsing", False):
-                    logger.exception("handler for section %r failed", name_attr)
+                    getattr(self, "_logger", logger).exception("handler for section %r failed", name_attr)
                 self._trace("parse", "section_handler_done", strategy="handler_call", success=False, details=name_attr)
 
     # ------------------------------------------------------------------ #
@@ -985,10 +994,10 @@ class ParserBSLattes:
         self,
         span_transform: Tag,
         full_text: str,
-    ) -> str:
+    ) -> int:
         """
         Extrai ano de um item de produção usando span data-tipo-ordenacao ou regex fallback
-        Retorna string com ano de 4 digitos ou string vazia se não encontrado
+        Retorna inteiro com ano de 4 digitos ou 0 se não encontrado
         """
         ano = ""
         span_ano = span_transform.find(
@@ -1002,7 +1011,7 @@ class ParserBSLattes:
             m_year = re.search(r"\b(20\d{2}|19\d{2})\b", full_text)
             if m_year:
                 ano = m_year.group(1)
-        return ano
+        return int(ano) if ano else 0
 
     def _clean_collaborator_list(
         self,
@@ -1238,18 +1247,18 @@ class ParserBSLattes:
 
         return funders
 
-    def _extract_project_year_range(self, year_text: str) -> tuple[str, str]:
+    def _extract_project_year_range(self, year_text: str) -> tuple[int, int]:
         """
         Extrai ano inicial e final de um texto contendo informações de ano
-        Retorna tupla (ano_inicio, ano_fim) ou ("", "") se não encontrado
+        Retorna tupla (ano_inicio, ano_fim) ou (0, 0) se não encontrado
         
         Suporta formatos:
         - Ano unico: "2020"
         - Intervalo: "2020 - 2023"
         - Aberto: "2020 - Atual" ou "2020 - Atualmente"
         """
-        ano_inicio = ""
-        ano_fim = ""
+        ano_inicio = 0
+        ano_fim = 0
         
         if not year_text:
             return ano_inicio, ano_fim
@@ -1257,7 +1266,7 @@ class ParserBSLattes:
         # Procura por intervalo completo (YYYY - YYYY)
         m_range = re.search(r"\b(\d{4})\b.*?-.*?\b(\d{4})\b", year_text)
         if m_range:
-            return m_range.group(1), m_range.group(2)
+            return int(m_range.group(1)), int(m_range.group(2))
         
         # Procura por intervalo aberto (YYYY - Atual/Atualmente)
         m_current = re.search(
@@ -1266,13 +1275,13 @@ class ParserBSLattes:
             re.IGNORECASE,
         )
         if m_current:
-            ano_inicio = m_current.group(1)
+            ano_inicio = int(m_current.group(1))
             return ano_inicio, ano_fim
         
         # Fallback: procura por ano unico
         m_single = re.search(r"(\d{4})", year_text)
         if m_single:
-            ano_inicio = m_single.group(1)
+            ano_inicio = int(m_single.group(1))
         
         return ano_inicio, ano_fim
 
@@ -1744,7 +1753,7 @@ class ParserBSLattes:
             return out
         except Exception as exc:
             if getattr(self, "debug_parsing", False):
-                logger.error("Error in producoes_bibliograficas: %s", exc)
+                getattr(self, "_logger", logger).exception("Error in producoes_bibliograficas: %s", exc)
             self._trace("biblio", "parse_items", strategy="exception", success=False, details=str(exc))
             return []
 
@@ -2400,7 +2409,7 @@ class ParserBSLattes:
             return out
         except Exception as exc:
             if getattr(self, "debug_parsing", False):
-                logger.error("Error in producoes_artisticas: %s", exc)
+                getattr(self, "_logger", logger).exception("Error in producoes_artisticas: %s", exc)
             self._trace("artistica", "parse_items", strategy="exception", success=False, details=str(exc))
             return []
 
@@ -2537,12 +2546,12 @@ class ParserBSLattes:
         self,
         texto: str,
         is_concluida: bool = False,
-    ) -> tuple[str, str, str]:
+    ) -> tuple[str, str, int]:
         """
         Extrai nome do orientando, titulo do projeto e ano de um texto de orientação
         Para andamento (is_concluida=False): procura por "Inicio: YYYY"
         Para concluida (is_concluida=True): procura por ano sem "Inicio:"
-        Retorna tupla (nome, titulo, ano)
+        Retorna tupla (nome: str, titulo: str, ano: int) onde ano eh 0 se não encontrado
         """
         nome = ""
         titulo = ""
@@ -2685,7 +2694,7 @@ class ParserBSLattes:
         titulo = _normalize_whitespace(titulo).strip(" .;")
         ano = _normalize_whitespace(ano).strip(" .;")
 
-        return nome, titulo, ano
+        return nome, titulo, int(ano) if ano else 0
 
     def _extract_area_from_orientacao(self, raw: str) -> str:
         """
