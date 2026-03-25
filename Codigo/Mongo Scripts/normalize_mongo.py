@@ -67,10 +67,11 @@ def create_language_detector() -> spacy.Language:
     if "language_detector" not in Language.factories:
         Language.factory(
             "language_detector",
-            func=lambda _nlp, _name: LanguageDetector(),
+            func=lambda nlp, name: LanguageDetector(),
         )
 
     detector_nlp = spacy.blank("xx")
+    detector_nlp.add_pipe("sentencizer")
     detector_nlp.add_pipe("language_detector")
     return detector_nlp
 
