@@ -101,7 +101,11 @@ def normalize_text(
     lang = detect_language(detector_nlp, text)
     nlp = nlp_models.get(lang, nlp_models['pt'])
     doc = nlp(text)
-    lemmas = [token.lemma_ for token in doc if not token.is_space]
+    lemmas = [
+        token.lemma_
+        for token in doc
+        if not token.is_punct and token.pos_ != "SYM"
+    ]
     return " ".join(lemmas).lower().strip()
 
 
